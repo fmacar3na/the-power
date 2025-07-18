@@ -17,7 +17,7 @@ while :; do
     enterprise(slug: "$enterprise") {
       organizations(first: 1, after: "$after_cursor") {
         nodes {
-          login
+          name
         }
         pageInfo {
           hasNextPage
