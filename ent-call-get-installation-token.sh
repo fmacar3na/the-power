@@ -6,9 +6,15 @@
 
 # rate_limits: https://docs.github.com/en/developers/apps/building-github-apps/rate-limits-for-github-apps
 
+
 JWT=$(./ent-call-get-jwt.sh ${ent_app_id} 2>/dev/null)
 
-installation_id=${ent_app_installation_id}
+# Allow passing installation_id as $1, fallback to ent_app_installation_id
+if [ -n "$1" ]; then
+  installation_id="$1"
+else
+  installation_id="${ent_app_installation_id}"
+fi
 
 curl --silent ${curl_custom_flags} \
      -X POST \
