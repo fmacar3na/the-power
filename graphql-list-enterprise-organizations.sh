@@ -1,28 +1,48 @@
 .  ./.gh-api-examples.conf
 
-# https://docs.github.com/en/graphql/reference/objects#enterpriseorganizationmembershipconnection
-# 
-# API Gap: This feature is not currently in the REST API for Enterprise administration https://docs.github.com/en/enterprise-cloud@latest/rest/enterprise-admin?apiVersion=2022-11-28
+orgs=()
+after_cursor=""
 
+while :; do
 
-read -r -d '' graphql_script <<- EOF
-{
-  enterprise(slug: "$enterprise") {
-    organizations(first: 100) {
-      nodes {
-        name
+  if [ -z "$after_cursor" ]; then
+    after_clause=""
+  else
+    after_clause=", after: \"$after_cursor\""
+  fi
+
+  read -r -d '' graphql_script <<- EOF
+  {
+    enterprise(slug: "$enterprise") {
+      organizations(first: 100, after: "$after_cursor") {
+        nodes {
+          name
+        }
+        pageInfo {
+          hasNextPage
+          endCursor
+        }
       }
     }
   }
-}
 EOF
 
-# Escape quotes and reformat script to a single line
-graphql_script="$(echo ${graphql_script//\"/\\\"})"
+  response=$(jq -n --arg q "$graphql_script" '{query: $q}' | \
+    curl -s ${curl_custom_flags} \
+      -H "Accept: application/vnd.github.v3+json" \
+      -H "Authorization: Bearer ${GITHUB_TOKEN}" \
+      "${GITHUB_APIV4_BASE_URL}" -d @-)
 
+  # Extract org logins and append to orgs array
+  orgs=( $(echo "$response" | jq -r '.data.enterprise.organizations.nodes[].name') )
+  printf "%s\n" "${orgs[@]}"
+  
+  # Get pagination info
+  has_next=$(echo "$response" | jq -r '.data.enterprise.organizations.pageInfo.hasNextPage')
+  after_cursor=$(echo "$response" | jq -r '.data.enterprise.organizations.pageInfo.endCursor')
 
-curl ${curl_custom_flags} \
-     -H "Accept: application/vnd.github.v3+json" \
-     -H "Authorization: Bearer ${GITHUB_TOKEN}" \
-        "${GITHUB_APIV4_BASE_URL}" -d "{ \"query\": \"$graphql_script\"}"
+  if [ "$has_next" != "true" ]; then
+    break
+  fi
+done
 

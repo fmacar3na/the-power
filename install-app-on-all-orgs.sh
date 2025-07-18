@@ -15,8 +15,9 @@ jq -n \
 
 GITHUB_TOKEN=$(./ent-call-get-installation-token.sh | jq -r '.token')
 
-for org_num in $(seq 1 499); do
-  org="batch-org-$org_num"
+orgs=( $(./graphql-list-enterprise-organizations.sh) )
+
+for org in "${orgs[@]}"; do
   echo "➡️  Installing app for $org"
   response=$(curl -s -w "\n%{http_code}" \
      -H "X-GitHub-Api-Version: ${github_api_version}" \
