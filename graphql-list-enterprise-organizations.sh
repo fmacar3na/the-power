@@ -15,7 +15,7 @@ while :; do
   read -r -d '' graphql_script <<- EOF
   {
     enterprise(slug: "$enterprise") {
-      organizations(first: 1, after: "$after_cursor") {
+      organizations(first: 100, after: "$after_cursor") {
         nodes {
           name
         }
