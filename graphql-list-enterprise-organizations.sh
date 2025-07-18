@@ -11,6 +11,7 @@ while :; do
     after_clause=", after: \"$after_cursor\""
   fi
 
+  # Name can be different than login and cause issues if different, but on staffship we have an error if we query login...
   read -r -d '' graphql_script <<- EOF
   {
     enterprise(slug: "$enterprise") {
@@ -36,7 +37,7 @@ EOF
   # Extract org logins and append to orgs array
   orgs=( $(echo "$response" | jq -r '.data.enterprise.organizations.nodes[].name') )
   printf "%s\n" "${orgs[@]}"
-  
+
   # Get pagination info
   has_next=$(echo "$response" | jq -r '.data.enterprise.organizations.pageInfo.hasNextPage')
   after_cursor=$(echo "$response" | jq -r '.data.enterprise.organizations.pageInfo.endCursor')
