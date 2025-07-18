@@ -20,6 +20,17 @@ while :; do
   response=$(curl -s ${curl_custom_flags} \
     -H "Authorization: Bearer ${JWT}" \
     "${GITHUB_API_BASE_URL}/app/installations?per_page=${per_page}&page=${page}")
+  # Skip page if error message is present
+  if [[ "$response" =~ ^\{ ]]; then
+    error_message=$(echo "$response" | jq -r '.message // empty')
+  else
+    error_message=""
+  fi
+  if [ "$error_message" = "Unable to complete request that contains suffixed values in the response payloads." ]; then
+    echo "Skipping page $page due to error: $error_message" >&2
+    page=$((page + 1))
+    continue
+  fi
   count=$(echo "$response" | jq 'length')
   all_results=$(printf '%s\n%s\n' "$all_results" "$response" | jq -s 'add')
   if [ "$count" -lt "$per_page" ]; then
@@ -29,4 +40,3 @@ while :; do
 done
 
 echo "$all_results"
-
