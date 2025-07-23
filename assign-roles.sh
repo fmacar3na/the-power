@@ -2,17 +2,21 @@
 
 .  ./.gh-api-examples.conf
 
-username="guperrot_tntmd2"
-
+usernames=$(./list-enterprise-team-members.sh "$team")
 APP_INSTALLS=$(./tiny-list-app-installations.sh)
 
 # Iterate over each installation
 echo "$APP_INSTALLS" | jq -c '.[]' | while read -r install; do
   install_id=$(echo "$install" | jq -r '.id')
   org=$(echo "$install" | jq -r '.account.login')
+
   if [ -z "$org" ] || [ "$org" = "null" ]; then
     continue
   fi
+
+  # if ! [[ "$org" =~ ^batch-org-10[0-9]$ ]]; then
+  #   continue
+  # fi
 
   echo "➡️  Assigning roles for $org (install_id: $install_id)"
   GITHUB_TOKEN=$(./ent-call-get-installation-token.sh  $install_id | jq -r '.token')
@@ -29,19 +33,21 @@ echo "$APP_INSTALLS" | jq -c '.[]' | while read -r install; do
   else
     echo "   ❌ Failed to get roles for $org (HTTP $http_code)"
   fi
-  # Assign the first role to the user
-  response=$(curl -s -w "\n%{http_code}" -X PUT \
-    -H "X-GitHub-Api-Version: ${github_api_version}" \
-    -H "Accept: application/vnd.github.v3+json" \
-    -H "Authorization: Bearer ${GITHUB_TOKEN}" \
-    "${GITHUB_API_BASE_URL}/orgs/${org}/organization-roles/users/${username}/${first_role_id}")
-  http_code=$(echo "$response" | tail -n1)
-  json_body=$(echo "$response" | sed '$d')
-  if [[ "$http_code" -lt 300 ]]; then
-    echo "   ✅ Assigned role to $username in $org"
-  else
-    echo "   ❌ Failed to assign role to $username in $org (HTTP $http_code)"
-  fi
+  
+  for username in $usernames; do
+    response=$(curl -s -w "\n%{http_code}" -X PUT \
+      -H "X-GitHub-Api-Version: ${github_api_version}" \
+      -H "Accept: application/vnd.github.v3+json" \
+      -H "Authorization: Bearer ${GITHUB_TOKEN}" \
+      "${GITHUB_API_BASE_URL}/orgs/${org}/organization-roles/users/${username}/${first_role_id}")
+    http_code=$(echo "$response" | tail -n1)
+    json_body=$(echo "$response" | sed '$d')
+    if [[ "$http_code" -lt 300 ]]; then
+      echo "   ✅ Assigned role to $username in $org"
+    else
+      echo "   ❌ Failed to assign role to $username in $org (HTTP $http_code)"
+    fi
+  done
 done
 
 echo "🎉 Done assigning roles."
