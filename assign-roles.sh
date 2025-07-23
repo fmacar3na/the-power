@@ -2,6 +2,10 @@
 
 .  ./.gh-api-examples.conf
 
+if [ -n "$1" ]; then
+  org_max_suffix=$1
+fi
+
 usernames=$(./list-enterprise-team-members.sh "$team")
 APP_INSTALLS=$(./tiny-list-app-installations.sh)
 
@@ -14,9 +18,16 @@ echo "$APP_INSTALLS" | jq -c '.[]' | while read -r install; do
     continue
   fi
 
-  # if ! [[ "$org" =~ ^batch-org-10[0-9]$ ]]; then
-  #   continue
-  # fi
+  # Only process orgs with suffix less than passed suffix
+  if [ -n "$org_max_suffix" ]; then
+    org_suffix=$(echo "$org" | sed 's/^batch-org-//')
+    if ! [[ "$org_suffix" =~ ^[0-9]+$ ]]; then
+      continue
+    fi
+    if [ "$org_suffix" -ge "$org_max_suffix" ]; then
+      continue
+    fi
+  fi
 
   echo "➡️  Assigning roles for $org (install_id: $install_id)"
   GITHUB_TOKEN=$(./ent-call-get-installation-token.sh  $install_id | jq -r '.token')
