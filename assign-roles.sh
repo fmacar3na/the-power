@@ -57,6 +57,7 @@ echo "$APP_INSTALLS" | jq -c '.[]' | while read -r install; do
       echo "   ✅ Assigned role to $username in $org"
     else
       echo "   ❌ Failed to assign role to $username in $org (HTTP $http_code)"
+      break
     fi
   done
 done
