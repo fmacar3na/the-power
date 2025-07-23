@@ -20,7 +20,8 @@ echo "$APP_INSTALLS" | jq -c '.[]' | while read -r install; do
 
   # Only process orgs with suffix less than passed suffix
   if [ -n "$org_max_suffix" ]; then
-    org_suffix=$(echo "$org" | sed 's/^batch-org-//')
+    prefix="${org_max_suffix:0:1}"
+    org_suffix=$(echo "$org" | sed "s/^batch-org-${prefix}/${prefix}/")
     if ! [[ "$org_suffix" =~ ^[0-9]+$ ]]; then
       continue
     fi
