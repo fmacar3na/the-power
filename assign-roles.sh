@@ -36,7 +36,7 @@ echo "$app_installs" | jq -c '.[]' | while read -r install; do
 
   echo "➡️  Assigning roles for $org (install_id: $install_id)"
   GITHUB_TOKEN=$(./ent-call-get-installation-token.sh $install_id | jq -r '.token')
-  response=$(curl -s -w "\n%{http_code}" \
+  response=$(curl -s -v -w "\n%{http_code}" \
     -H "X-GitHub-Api-Version: ${github_api_version}" \
     -H "Accept: application/vnd.github.v3+json" \
     -H "Authorization: Bearer ${GITHUB_TOKEN}" \
@@ -51,20 +51,22 @@ echo "$app_installs" | jq -c '.[]' | while read -r install; do
   fi
   
   for username in $usernames; do
-    response=$(curl -s -w "\n%{http_code}" -X PUT \
-      -H "X-GitHub-Api-Version: ${github_api_version}" \
-      -H "Accept: application/vnd.github.v3+json" \
-      -H "Authorization: Bearer ${GITHUB_TOKEN}" \
-      "${GITHUB_API_BASE_URL}/orgs/${org}/organization-roles/users/${username}/${first_role_id}")
-    http_code=$(echo "$response" | tail -n1)
-    json_body=$(echo "$response" | sed '$d')
-    if [[ "$http_code" -lt 300 ]]; then
-      echo "   ✅ Assigned role to $username in $org"
-    else
-      echo "   ❌ Failed to assign role to $username in $org (HTTP $http_code)"
-      break
-    fi
+    (
+      response=$(curl -s -w "\n%{http_code}" -X PUT \
+        -H "X-GitHub-Api-Version: ${github_api_version}" \
+        -H "Accept: application/vnd.github.v3+json" \
+        -H "Authorization: Bearer ${GITHUB_TOKEN}" \
+        "${GITHUB_API_BASE_URL}/orgs/${org}/organization-roles/users/${username}/${first_role_id}")
+      http_code=$(echo "$response" | tail -n1)
+      json_body=$(echo "$response" | sed '$d')
+      if [[ "$http_code" -lt 300 ]]; then
+        echo "   ✅ Assigned role to $username in $org"
+      else
+        echo "   ❌ Failed to assign role to $username in $org (HTTP $http_code)"
+      fi
+    ) &
   done
+  wait
 done
 
 echo "🎉 Done assigning roles."
