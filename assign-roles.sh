@@ -36,7 +36,7 @@ echo "$app_installs" | jq -c '.[]' | while read -r install; do
 
   echo "➡️  Assigning roles for $org (install_id: $install_id)"
   GITHUB_TOKEN=$(./ent-call-get-installation-token.sh $install_id | jq -r '.token')
-  response=$(curl -s -v -w "\n%{http_code}" \
+  response=$(curl -s -w "\n%{http_code}" \
     -H "X-GitHub-Api-Version: ${github_api_version}" \
     -H "Accept: application/vnd.github.v3+json" \
     -H "Authorization: Bearer ${GITHUB_TOKEN}" \
