@@ -25,7 +25,7 @@ echo "$app_installs" | jq -c '.[]' | while read -r install; do
     if ! [[ "$org_suffix" =~ ^[0-9]+$ ]]; then
       continue
     fi
-    if [ "$org_suffix" -ge "$org_max_suffix" ]; then
+    if [ "$org_suffix" -gt "$org_max_suffix" ]; then
       continue
     fi
   fi
