@@ -2,6 +2,11 @@
 
 .  ./.gh-api-examples.conf
 
+if [ -z "$GITHUB_TOKEN" ]; then
+  echo "GITHUB_TOKEN is not set, please provide a PAT with admin:enterprise scope."
+  exit 1
+fi
+
 if [ -n "$1" ]; then
   org_max_suffix=$1
 fi
