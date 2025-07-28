@@ -11,7 +11,12 @@ if [ -n "$1" ]; then
   org_max_suffix=$1
 fi
 
-usernames=$(./list-enterprise-team-members.sh "$team")
+list_enterprise_team_members_output=$(./list-enterprise-team-members.sh "$team")
+if [ $? -ne 0 ]; then
+  echo $list_enterprise_team_members_output
+  exit 1
+fi
+usernames=$list_enterprise_team_members_output
 app_installs=$(./tiny-list-app-installations.sh)
 
 # Iterate over each installation
