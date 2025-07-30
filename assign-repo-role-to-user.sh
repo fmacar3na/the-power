@@ -21,7 +21,7 @@ fi
 usernames=$list_enterprise_team_members_output
 app_installs=$(./tiny-list-app-installations.sh)
 
-repo="private-repo-1"
+repo=${repo:-"private-repo-1"}
 
 # Iterate over each installation
 echo "$app_installs" | jq -c '.[]' | while read -r install; do
