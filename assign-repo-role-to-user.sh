@@ -13,15 +13,18 @@ if [ -n "$1" ]; then
   org_max_suffix=$1
 fi
 
-team="cleanup-test"
+list_enterprise_team_members_output=$(./list-enterprise-team-members.sh "$team")
+if [ $? -ne 0 ]; then
+  echo $list_enterprise_team_members_output
+  exit 1
+fi
+usernames=$list_enterprise_team_members_output
+app_installs=$(./tiny-list-app-installations.sh)
 
-usernames=$(./list-enterprise-team-members.sh "$team")
-
-APP_INSTALLS=$(./tiny-list-app-installations.sh)
 repo="private-repo-1"
 
 # Iterate over each installation
-echo "$APP_INSTALLS" | jq -c '.[]' | while read -r install; do
+echo "$app_installs" | jq -c '.[]' | while read -r install; do
   install_id=$(echo "$install" | jq -r '.id')
   org=$(echo "$install" | jq -r '.account.login')
   if [ -z "$org" ] || [ "$org" = "null" ]; then
