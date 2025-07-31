@@ -2,7 +2,7 @@
 
 .  ./.gh-api-examples.conf
 
-# https://docs.github.com/en/rest/collaborators/collaborators?apiVersion=2022-11-28#add-a-repository-collaborator
+# https://docs.github.com/en/rest/teams/teams?apiVersion=2022-11-28#add-or-update-team-repository-permissions
 
 if [ -z "$GITHUB_TOKEN" ]; then
   echo "GITHUB_TOKEN is not set, please provide a PAT with admin:enterprise scope."
@@ -12,13 +12,6 @@ fi
 if [ -n "$1" ]; then
   org_max_suffix=$1
 fi
-
-list_enterprise_team_members_output=$(./list-enterprise-team-members.sh "$team")
-if [ $? -ne 0 ]; then
-  echo $list_enterprise_team_members_output
-  exit 1
-fi
-usernames=$list_enterprise_team_members_output
 
 APP_INSTALLS=$(./tiny-list-app-installations.sh)
 repo="private-repo-2"
@@ -45,25 +38,20 @@ echo "$APP_INSTALLS" | jq -c '.[]' | while read -r install; do
   echo "➡️   Assigning repo permissions for $org (install_id: $install_id)"
   GITHUB_TOKEN=$(./ent-call-get-installation-token.sh  $install_id | jq -r '.token')
 
-  for username in $usernames; do
-  (
-    response=$(curl -s -w "\n%{http_code}" -X PUT \
-      -H "Authorization: Bearer $GITHUB_TOKEN" \
-      -H "Accept: application/vnd.github+json" \
-      -d "{\"permission\":\"triage\"}" \
-    "$GITHUB_API_BASE_URL/repos/$org/$repo/collaborators/$username")
-    http_code=$(echo "$response" | tail -n1)
-    json_body=$(echo "$response" | sed '$d')
+  response=$(curl -s -w "\n%{http_code}" -X PUT \
+    -H "Authorization: Bearer $GITHUB_TOKEN" \
+    -H "Accept: application/vnd.github+json" \
+    -d "{\"permission\":\"triage\"}" \
+  "$GITHUB_API_BASE_URL/orgs/$org/teams/$team/repos/$org/$repo")
+  http_code=$(echo "$response" | tail -n1)
+  json_body=$(echo "$response" | sed '$d')
 
-    if [[ "$http_code" == "201" ]] || [[ "$http_code" == "204" ]]; then
-      echo "   ✅ Repo permissions assigned to $username"
-    else
-      echo "   ❌ Failed to assign repo permissions (HTTP $http_code) for $username"
-      #echo "   Response: $json_body"
-    fi
-  ) &
-  sleep 0.009
-  done
+  if [[ "$http_code" == "201" ]] || [[ "$http_code" == "204" ]]; then
+    echo "   ✅ Repo permissions assigned to $team"
+  else
+    echo "   ❌ Failed to assign repo permissions (HTTP $http_code) for $team"
+    echo "   Response: $json_body"
+  fi
   wait
 done
 
